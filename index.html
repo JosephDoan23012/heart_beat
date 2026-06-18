@@ -1,144 +1,38 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Beat Ultra Smooth</title>
 
-<title>Heart Beat Ultra Smooth</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #050505;
+        }
 
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-body{
-    margin:0;
-    overflow:hidden;
-    background:#050505;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-}
-
-canvas{
-    position:fixed;
-    inset:0;
-}
-
-.neon-border{
-    border:1px solid rgba(236,72,153,.15);
-    box-shadow:
-        0 0 20px rgba(236,72,153,.15),
-        inset 0 0 20px rgba(236,72,153,.05);
-    backdrop-filter:blur(12px);
-}
-
-input[type="range"]::-webkit-slider-thumb{
-    -webkit-appearance:none;
-    appearance:none;
-    width:14px;
-    height:14px;
-    border-radius:50%;
-    background:#ec4899;
-    box-shadow:0 0 10px #ec4899;
-    cursor:pointer;
-}
-</style>
+        canvas {
+            position: fixed;
+            inset: 0;
+        }
+    </style>
 </head>
-
 <body>
 
 <canvas id="canvas"></canvas>
 
-<div
-id="panel"
-class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10
-w-[92%] max-w-md bg-black/60 rounded-2xl p-5 neon-border">
-
-<div class="flex justify-between items-center mb-4">
-<h1 class="text-pink-500 font-bold tracking-wider">
-❤️ HEART BEAT
-</h1>
-
-<button id="hideBtn"
-class="text-xs text-gray-400 hover:text-pink-400">
-Ẩn [H]
-</button>
-</div>
-
-<div class="space-y-4">
-
-<div>
-<div class="flex justify-between text-xs text-gray-300 mb-1">
-<span>Chu kỳ nhịp tim</span>
-<span id="speedValue" class="text-pink-400">0.8 giây</span>
-</div>
-
-<input
-id="speed"
-type="range"
-min="0.3"
-max="2"
-step="0.05"
-value="0.8"
-class="w-full">
-</div>
-
-<div>
-<div class="flex justify-between text-xs text-gray-300 mb-1">
-<span>Mật độ hạt</span>
-<span id="densityValue" class="text-pink-400">1500</span>
-</div>
-
-<input
-id="density"
-type="range"
-min="500"
-max="3000"
-step="100"
-value="1500"
-class="w-full">
-</div>
-
-<div>
-<div class="flex justify-between text-xs text-gray-300 mb-1">
-<span>Glow</span>
-<span id="glowValue" class="text-pink-400">1.5</span>
-</div>
-
-<input
-id="glow"
-type="range"
-min="0.5"
-max="3"
-step="0.1"
-value="1.5"
-class="w-full">
-</div>
-
-</div>
-
-</div>
-
-<button
-id="showBtn"
-class="absolute bottom-5 right-5 z-10
-opacity-0 pointer-events-none
-bg-black/60 rounded-full p-3 neon-border">
-
-❤️
-
-</button>
-
 <script>
-
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const settings = {
-    beatDuration:0.8,
-    density:1500,
-    glow:1.5
+    beatDuration: 0.8,
+    density: 1500,
+    glow: 1.5
 };
 
-function resizeCanvas(){
-
+function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
 
     canvas.width = innerWidth * dpr;
@@ -147,415 +41,196 @@ function resizeCanvas(){
     canvas.style.width = innerWidth + "px";
     canvas.style.height = innerHeight + "px";
 
-    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 resizeCanvas();
-window.addEventListener("resize",resizeCanvas);
+window.addEventListener("resize", resizeCanvas);
 
-function heart(t,scale){
-
-    const x =
-        16*Math.pow(Math.sin(t),3);
+function heart(t, scale) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
 
     const y =
-        13*Math.cos(t)
-        -5*Math.cos(2*t)
-        -2*Math.cos(3*t)
-        -Math.cos(4*t);
+        13 * Math.cos(t) -
+        5 * Math.cos(2 * t) -
+        2 * Math.cos(3 * t) -
+        Math.cos(4 * t);
 
-    return{
-        x:x*scale,
-        y:-y*scale
+    return {
+        x: x * scale,
+        y: -y * scale
     };
 }
 
-class Particle{
-
-    constructor(){
+class Particle {
+    constructor() {
         this.init();
     }
 
-    init(){
+    init() {
+        const t = Math.random() * Math.PI * 2;
+        const p = heart(t, 12 + Math.random() * 5);
 
-        const t=Math.random()*Math.PI*2;
+        const fill = Math.sqrt(Math.random());
 
-        const p=
-            heart(
-                t,
-                12+Math.random()*5
-            );
+        this.ox = p.x * fill;
+        this.oy = p.y * fill;
 
-        const fill=Math.sqrt(Math.random());
+        this.x = this.ox;
+        this.y = this.oy;
 
-        this.ox=p.x*fill;
-        this.oy=p.y*fill;
+        this.size = Math.random() * 1.6 + 0.5;
+        this.alpha = Math.random() * 0.6 + 0.3;
+        this.phase = Math.random() * 6.28;
 
-        this.x=this.ox;
-        this.y=this.oy;
+        const r = 240 + Math.random() * 15;
+        const g = 40 + Math.random() * 60;
+        const b = 120 + Math.random() * 100;
 
-        this.size=
-            Math.random()*1.6+0.5;
-
-        this.alpha=
-            Math.random()*0.6+0.3;
-
-        this.phase=
-            Math.random()*6.28;
-
-        const r=240+Math.random()*15;
-        const g=40+Math.random()*60;
-        const b=120+Math.random()*100;
-
-        this.color=`rgb(${r},${g},${b})`;
+        this.color = `rgb(${r},${g},${b})`;
     }
 
-    update(pulse,time){
+    update(pulse, time) {
+        this.x = this.ox * pulse + Math.sin(time + this.phase) * 0.4;
+        this.y = this.oy * pulse + Math.cos(time + this.phase) * 0.4;
 
-        this.x=
-            this.ox*pulse
-            +Math.sin(time+this.phase)*0.4;
-
-        this.y=
-            this.oy*pulse
-            +Math.cos(time+this.phase)*0.4;
-
-        this.alpha=
-            0.55+
-            Math.sin(time*2+this.phase)*0.35;
+        this.alpha =
+            0.55 +
+            Math.sin(time * 2 + this.phase) * 0.35;
     }
 
-    draw(){
-
-        ctx.globalAlpha=this.alpha;
-
-        ctx.fillStyle=this.color;
+    draw() {
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
 
         ctx.beginPath();
-        ctx.arc(
-            this.x,
-            this.y,
-            this.size,
-            0,
-            Math.PI*2
-        );
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
     }
 }
 
-class Ember{
+class Ember {
+    constructor() {
+        const t = Math.random() * Math.PI * 2;
+        const p = heart(t, 18);
 
-    constructor(){
+        this.x = p.x;
+        this.y = p.y;
 
-        const t=Math.random()*Math.PI*2;
+        const a = Math.atan2(p.y, p.x);
+        const speed = 1 + Math.random() * 2;
 
-        const p=heart(t,18);
+        this.vx = Math.cos(a) * speed;
+        this.vy = Math.sin(a) * speed;
 
-        this.x=p.x;
-        this.y=p.y;
-
-        const a=Math.atan2(
-            p.y,
-            p.x
-        );
-
-        const speed=
-            1+Math.random()*2;
-
-        this.vx=Math.cos(a)*speed;
-        this.vy=Math.sin(a)*speed;
-
-        this.life=1;
-
-        this.size=
-            Math.random()*1.5+0.5;
+        this.life = 1;
+        this.size = Math.random() * 1.5 + 0.5;
     }
 
-    update(){
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
 
-        this.x+=this.vx;
-        this.y+=this.vy;
-
-        this.vy+=0.02;
-
-        this.life-=0.02;
+        this.vy += 0.02;
+        this.life -= 0.02;
     }
 
-    draw(){
-
-        ctx.globalAlpha=this.life;
-
-        ctx.fillStyle="#ff7aa8";
+    draw() {
+        ctx.globalAlpha = this.life;
+        ctx.fillStyle = "#ff7aa8";
 
         ctx.beginPath();
-        ctx.arc(
-            this.x,
-            this.y,
-            this.size,
-            0,
-            Math.PI*2
-        );
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
     }
 }
 
-let particles=[];
-let embers=[];
+let particles = [];
+let embers = [];
 
-function createParticles(){
+function createParticles() {
+    particles.length = 0;
 
-    particles.length=0;
-
-    for(
-        let i=0;
-        i<settings.density;
-        i++
-    ){
-        particles.push(
-            new Particle()
-        );
+    for (let i = 0; i < settings.density; i++) {
+        particles.push(new Particle());
     }
 }
 
 createParticles();
 
-let lastBeat=false;
+let lastBeat = false;
 
-function animate(now){
+function animate(now) {
+    const time = now * 0.002;
 
-    const time=
-        now*0.002;
+    ctx.fillStyle = "rgba(5,5,5,0.12)";
+    ctx.fillRect(0, 0, innerWidth, innerHeight);
 
-    ctx.fillStyle=
-        "rgba(5,5,5,0.12)";
-
-    ctx.fillRect(
-        0,
-        0,
-        innerWidth,
-        innerHeight
-    );
-
-    const cx=
-        innerWidth/2;
-
-    const cy=
-        innerHeight/2;
+    const cx = innerWidth / 2;
+    const cy = innerHeight / 2;
 
     ctx.save();
+    ctx.translate(cx, cy);
 
-    ctx.translate(cx,cy);
+    const angle =
+        (2 * Math.PI * now) /
+        (settings.beatDuration * 1000);
 
-    const angle=
-        (2*Math.PI*now)/
-        (settings.beatDuration*1000);
+    const pulse =
+        (Math.sin(angle - Math.PI / 2) + 1) * 0.5;
 
-    const pulse=
-        (
-            Math.sin(
-                angle-Math.PI/2
-            )+1
-        )*0.5;
+    const eased =
+        pulse * pulse * (3 - 2 * pulse);
 
-    const eased=
-        pulse*pulse*
-        (3-2*pulse);
+    const pulseFactor =
+        1 + eased * 0.18;
 
-    const pulseFactor=
-        1+eased*0.18;
-
-    if(
-        pulse>0.95 &&
-        !lastBeat
-    ){
-
-        for(
-            let i=0;
-            i<4;
-            i++
-        ){
-            embers.push(
-                new Ember()
-            );
+    if (pulse > 0.95 && !lastBeat) {
+        for (let i = 0; i < 4; i++) {
+            embers.push(new Ember());
         }
 
-        lastBeat=true;
+        lastBeat = true;
     }
 
-    if(pulse<0.7){
-        lastBeat=false;
+    if (pulse < 0.7) {
+        lastBeat = false;
     }
 
-    ctx.shadowColor="#ff4da6";
-    ctx.shadowBlur=
-        Math.min(
-            20,
-            settings.glow*8
-        );
+    ctx.shadowColor = "#ff4da6";
+    ctx.shadowBlur = Math.min(
+        20,
+        settings.glow * 8
+    );
 
-    for(
-        let i=0;
-        i<particles.length;
-        i++
-    ){
-
-        const p=
-            particles[i];
-
-        p.update(
+    for (let i = 0; i < particles.length; i++) {
+        particles[i].update(
             pulseFactor,
             time
         );
 
-        p.draw();
+        particles[i].draw();
     }
 
-    ctx.shadowBlur=0;
+    ctx.shadowBlur = 0;
 
-    for(
-        let i=embers.length-1;
-        i>=0;
-        i--
-    ){
-
+    for (let i = embers.length - 1; i >= 0; i--) {
         embers[i].update();
         embers[i].draw();
 
-        if(
-            embers[i].life<=0
-        ){
-            embers.splice(i,1);
+        if (embers[i].life <= 0) {
+            embers.splice(i, 1);
         }
     }
 
     ctx.restore();
 
-    ctx.globalAlpha=1;
+    ctx.globalAlpha = 1;
 
-    requestAnimationFrame(
-        animate
-    );
+    requestAnimationFrame(animate);
 }
 
-requestAnimationFrame(
-    animate
-);
-
-const speed=
-document.getElementById("speed");
-
-const density=
-document.getElementById("density");
-
-const glow=
-document.getElementById("glow");
-
-speed.addEventListener(
-"input",
-e=>{
-
-settings.beatDuration=
-parseFloat(e.target.value);
-
-document.getElementById(
-"speedValue"
-).innerText=
-settings.beatDuration.toFixed(2)
-+" giây";
-
-});
-
-density.addEventListener(
-"input",
-e=>{
-
-settings.density=
-parseInt(e.target.value);
-
-document.getElementById(
-"densityValue"
-).innerText=
-settings.density;
-
-createParticles();
-
-});
-
-glow.addEventListener(
-"input",
-e=>{
-
-settings.glow=
-parseFloat(e.target.value);
-
-document.getElementById(
-"glowValue"
-).innerText=
-settings.glow.toFixed(1);
-
-});
-
-const panel=
-document.getElementById("panel");
-
-const hideBtn=
-document.getElementById("hideBtn");
-
-const showBtn=
-document.getElementById("showBtn");
-
-hideBtn.onclick=()=>{
-
-panel.classList.add(
-"opacity-0",
-"translate-y-10",
-"pointer-events-none"
-);
-
-showBtn.classList.remove(
-"opacity-0",
-"pointer-events-none"
-);
-
-};
-
-showBtn.onclick=()=>{
-
-panel.classList.remove(
-"opacity-0",
-"translate-y-10",
-"pointer-events-none"
-);
-
-showBtn.classList.add(
-"opacity-0",
-"pointer-events-none"
-);
-
-};
-
-window.addEventListener(
-"keydown",
-e=>{
-
-if(
-e.key==="h"||
-e.key==="H"
-){
-
-if(
-panel.classList.contains(
-"opacity-0"
-)
-){
-showBtn.click();
-}else{
-hideBtn.click();
-}
-
-}
-});
-
+requestAnimationFrame(animate);
 </script>
 
 </body>
