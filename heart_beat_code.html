@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trái Tim Đập Lấp Đầy - Lý Tuân</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        /* CSS tạo hiệu ứng phát sáng nhẹ cho bảng điều khiển */
+        .neon-border {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.15), inset 0 0 15px rgba(236, 72, 153, 0.05);
+            border: 1px solid rgba(236, 72, 153, 0.2);
+            backdrop-filter: blur(12px);
+        }
+        /* Tuỳ biến thanh trượt kéo */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ec4899;
+            cursor: pointer;
+            box-shadow: 0 0 8px #ec4899;
+            transition: transform 0.1s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+        }
+    </style>
+</head>
+<body class="w-full h-screen relative flex items-center justify-center select-none">
+
+    <!-- Canvas vẽ hiệu ứng trái tim -->
+    <canvas id="heartCanvas"></canvas>
+
+    <!-- Bảng điều khiển tương tác (Có thể ẩn/hiện) -->
+    <div id="controlPanel" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-[90%] max-w-md bg-black/60 neon-border rounded-2xl p-5 transition-all duration-300 transform translate-y-0 opacity-100">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-pink-500 font-bold text-lg tracking-wider flex items-center gap-2">
+                <svg class="w-5 h-5 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                LÝ TUÂN • HEART CODE
+            </h1>
+            <button id="hideBtn" class="text-gray-400 hover:text-pink-400 text-xs transition-colors duration-200">
+                Ẩn bảng [H]
+            </button>
+        </div>
+
+        <!-- Các thanh trượt điều khiển -->
+        <div class="space-y-4">
+            <!-- Tốc độ đập -->
+            <div>
+                <div class="flex justify-between text-xs text-gray-300 mb-1">
+                    <span>Tốc độ đập (Nhịp tim)</span>
+                    <span id="speedVal" class="text-pink-400 font-mono">1.0x</span>
+                </div>
+                <input id="speedSlider" type="range" min="0.3" max="3.0" step="0.1" value="1.0" class="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-pink-500">
+            </div>
+
+            <!-- Mật độ hạt sáng (Lấp đầy) -->
+            <div>
+                <div class="flex justify-between text-xs text-gray-300 mb-1">
+                    <span>Mật độ lấp đầy trái tim</span>
+                    <span id="densityVal" class="text-pink-400 font-mono">2500 hạt</span>
+                </div>
+                <input id="densitySlider" type="range" min="800" max="4500" step="100" value="2500" class="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-pink-500">
+            </div>
+
+            <!-- Độ rực sáng (Glow) -->
+            <div>
+                <div class="flex justify-between text-xs text-gray-300 mb-1">
+                    <span>Độ rực sáng hào quang</span>
+                    <span id="glowVal" class="text-pink-400 font-mono">2.0</span>
+                </div>
+                <input id="glowSlider" type="range" min="0.5" max="4.0" step="0.1" value="2.0" class="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-pink-500">
+            </div>
+        </div>
+
+        <p class="text-center text-[10px] text-gray-500 mt-4 italic">
+            "Công chúa, anh giao cả trái tim và hệ thống này cho em."
+        </p>
+    </div>
+
+    <!-- Nút Hiện bảng điều khiển khi đã ẩn -->
+    <button id="showBtn" class="absolute bottom-6 right-6 z-10 p-3 bg-black/60 neon-border rounded-full text-pink-500 opacity-0 pointer-events-none transition-all duration-300 hover:scale-110 active:scale-95">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+    </button>
+
+    <!-- Kịch bản Javascript thuật toán Trái tim đầy -->
+    <script>
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Cấu hình thông số mặc định của Trái Tim
+        const settings = {
+            beatSpeed: 1.0,
+            density: 2500,
+            glow: 2.0
+        };
+
+        // Lắng nghe sự thay đổi của bảng điều khiển tương tác
+        const speedSlider = document.getElementById('speedSlider');
+        const speedVal = document.getElementById('speedVal');
+        const densitySlider = document.getElementById('densitySlider');
+        const densityVal = document.getElementById('densityVal');
+        const glowSlider = document.getElementById('glowSlider');
+        const glowVal = document.getElementById('glowVal');
+
+        speedSlider.addEventListener('input', (e) => {
+            settings.beatSpeed = parseFloat(e.target.value);
+            speedVal.textContent = settings.beatSpeed.toFixed(1) + 'x';
+        });
+
+        densitySlider.addEventListener('input', (e) => {
+            const oldDensity = settings.density;
+            settings.density = parseInt(e.target.value);
+            densityVal.textContent = settings.density + ' hạt';
+            // Tạo lại các hạt khi thay đổi số lượng mật độ
+            reinitParticles();
+        });
+
+        glowSlider.addEventListener('input', (e) => {
+            settings.glow = parseFloat(e.target.value);
+            glowVal.textContent = settings.glow.toFixed(1);
+        });
+
+        // Tự động thay đổi kích thước canvas khi màn hình thay đổi kích thước
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- CÔNG THỨC TOÁN HỌC TRÁI TIM ĐẶC (LÝ CA) ---
+        // Hàm tính toán toạ độ x, y của đường viền trái tim chuẩn toán học
+        function heartEquation(t, scale) {
+            // Công thức đường viền chuẩn: x = 16 * sin^3(t), y = 13*cos(t) - 5*cos(2t) - 2*cos(3t) - cos(4t)
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            return {
+                x: x * scale,
+                y: -y * scale // Đảo dấu y để tim quay đúng chiều trên Canvas
+            };
+        }
+
+        // Lớp hạt (Particle) đại diện cho từng điểm sáng lấp lánh bên trong trái tim
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Phân bổ hạt ngẫu nhiên bên trong toàn bộ lòng trái tim
+                const t = Math.random() * Math.PI * 2;
+                const scale = 12 + Math.random() * 6; // Kích thước cơ sở của trái tim
+                
+                // Điểm viền cơ sở
+                const basePoint = heartEquation(t, scale);
+                
+                // Để lấp đầy lòng trái tim, ta co ngẫu nhiên điểm viền đó vào tâm (từ 0% đến 100%)
+                // Dùng căn bậc hai giúp phân bố các hạt đều hơn, tránh bị tụ quá đặc ở tâm
+                const fillRatio = Math.sqrt(Math.random()); 
+                
+                this.x = basePoint.x * fillRatio;
+                this.y = basePoint.y * fillRatio;
+
+                // Tốc độ di chuyển động của hạt (tự tạo dao động xung quanh vị trí mặc định)
+                this.vX = (Math.random() - 0.5) * 0.3;
+                this.vY = (Math.random() - 0.5) * 0.3;
+
+                // Lưu lại khoảng cách ban đầu để tính toán độ co giãn khi đập
+                this.originX = this.x;
+                this.originY = this.y;
+
+                // Kích thước điểm hạt
+                this.size = Math.random() * 1.5 + 0.5;
+
+                // Độ sáng và tuổi thọ lấp lánh ngẫu nhiên
+                this.alpha = Math.random() * 0.8 + 0.2;
+                this.blinkSpeed = 0.01 + Math.random() * 0.02;
+
+                // Màu sắc chuyển đổi mượt mà giữa Hồng đậm, Đỏ và Cam nhạt của ngọn lửa
+                const r = Math.floor(230 + Math.random() * 25);
+                const g = Math.floor(20 + Math.random() * 80);
+                const b = Math.floor(100 + Math.random() * 100);
+                this.color = `rgba(${r}, ${g}, ${b},`;
+            }
+
+            update(pulseFactor) {
+                // Mỗi hạt di chuyển lượn lờ nhẹ quanh toạ độ gốc của nó
+                this.x = this.originX * pulseFactor + Math.sin(Date.now() * 0.002 + this.originY) * 0.5;
+                this.y = this.originY * pulseFactor + Math.cos(Date.now() * 0.002 + this.originX) * 0.5;
+
+                // Hiệu ứng nhấp nháy lấp lánh (Blinking)
+                this.alpha += this.blinkSpeed;
+                if (this.alpha > 1 || this.alpha < 0.2) {
+                    this.blinkSpeed = -this.blinkSpeed;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = `${this.color}${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Lớp bụi sáng (Embers) tỏa ra xung quanh viền khi tim đập căng nhất
+        class Ember {
+            constructor(centerX, centerY) {
+                const t = Math.random() * Math.PI * 2;
+                const scale = 18; // Nằm ở mép ngoài cùng trái tim
+                const basePoint = heartEquation(t, scale);
+
+                this.x = basePoint.x;
+                this.y = basePoint.y;
+
+                // Hướng bay ra ngoài
+                const angle = Math.atan2(this.y, this.x);
+                const speed = 1.0 + Math.random() * 2.5;
+                this.vX = Math.cos(angle) * speed;
+                this.vY = Math.sin(angle) * speed;
+
+                this.size = Math.random() * 1.2 + 0.4;
+                this.alpha = 1.0;
+                this.decay = 0.015 + Math.random() * 0.02;
+                this.color = `rgba(236, ${Math.floor(70 + Math.random() * 100)}, 153,`;
+            }
+
+            update() {
+                this.x += this.vX;
+                this.y += this.vY;
+                // Thêm một chút trọng lực kéo hạt rơi nhẹ xuống tạo độ tự nhiên
+                this.vY += 0.02; 
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                if (this.alpha <= 0) return;
+                ctx.fillStyle = `${this.color}${this.alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Khởi tạo các mảng quản lý hạt và bụi sáng
+        let particles = [];
+        let embers = [];
+
+        function reinitParticles() {
+            particles = [];
+            for (let i = 0; i < settings.density; i++) {
+                particles.push(new Particle());
+            }
+        }
+        reinitParticles();
+
+        // Biến thời gian điều tiết nhịp đập của tim
+        let time = 0;
+
+        // VÒNG LẶP HOẠT HOẠ (Game Loop)
+        function animate() {
+            // Xóa mờ nhẹ canvas cũ để tạo vệt đuôi chuyển động sáng (trail effect)
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.12)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Xác định tâm vẽ nằm chính giữa màn hình canvas
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+
+            // Hàm tính toán nhịp tim: nhịp đập căng rồi lùi lại (sin + cos phức hợp để tạo nhịp đúp tự nhiên)
+            time += 0.05 * settings.beatSpeed;
+            // pulseFactor dao động nhịp nhàng từ 0.85 đến 1.15
+            const pulseFactor = 1.0 + Math.sin(time) * 0.1 * (0.5 + Math.sin(time * 2) * 0.5);
+
+            // Khi tim đập mạnh (giãn nở tối đa), sinh thêm các tia bụi lấp lánh phóng ra ngoài
+            if (pulseFactor > 1.06 && Math.random() < 0.4) {
+                // Tạo 3-5 bụi sáng tỏa ra từ các góc ngẫu nhiên
+                for (let k = 0; k < 5; k++) {
+                    embers.push(new Ember());
+                }
+            }
+
+            // Kích hoạt hiệu ứng phát sáng mờ ảo (Glow bloom) bằng Canvas shadow
+            ctx.shadowBlur = 12 * settings.glow;
+            ctx.shadowColor = '#ec4899';
+
+            // Cập nhật và vẽ tất cả hạt lấp đầy trái tim
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.update(pulseFactor);
+                p.draw();
+            }
+
+            // Tắt bóng mờ phát sáng cho bụi sáng để tăng hiệu năng vẽ hạt nhanh hơn
+            ctx.shadowBlur = 0;
+
+            // Cập nhật và vẽ bụi sáng lan tỏa
+            for (let i = embers.length - 1; i >= 0; i--) {
+                const ember = embers[i];
+                ember.update();
+                ember.draw();
+                // Xoá hạt đã tắt hẳn ra khỏi bộ nhớ
+                if (ember.alpha <= 0) {
+                    embers.splice(i, 1);
+                }
+            }
+
+            ctx.restore();
+            requestAnimationFrame(animate);
+        }
+
+        // Bắt đầu chạy hiệu ứng
+        animate();
+
+        // --- CÁC TÍNH NĂNG ẨN/HIỆN GIAO DIỆN PHỤ TRỢ ---
+        const controlPanel = document.getElementById('controlPanel');
+        const hideBtn = document.getElementById('hideBtn');
+        const showBtn = document.getElementById('showBtn');
+
+        function hidePanel() {
+            controlPanel.classList.add('translate-y-12', 'opacity-0', 'pointer-events-none');
+            showBtn.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function showPanel() {
+            controlPanel.classList.remove('translate-y-12', 'opacity-0', 'pointer-events-none');
+            showBtn.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        hideBtn.addEventListener('click', hidePanel);
+        showBtn.addEventListener('click', showPanel);
+
+        // Hỗ trợ phím tắt tắt/bật cho chuyên nghiệp
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'h' || e.key === 'H') {
+                if (controlPanel.classList.contains('opacity-0')) {
+                    showPanel();
+                } else {
+                    hidePanel();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
